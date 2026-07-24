@@ -1,4 +1,12 @@
 {
-  "ExpandedNodes": [],
+  "ExpandedNodes": [
+    "",
+    "\\BACKEND",
+    "\\BACKEND\\BACKEND",
+    "\\BACKEND\\BACKEND\\Controllers",
+    "\\BACKEND\\BACKEND\\Properties",
+    "\\BACKEND\\BACKEND\\Services"
+  ],
+  "SelectedNode": "\\BACKEND\\BACKEND\\Properties\\launchSettings.json",
   "PreviewInSolutionExplorer": false
 }

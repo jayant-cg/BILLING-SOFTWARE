@@ -1,7 +1,16 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Users\\JayantMohanMishra\\OneDrive - CG Infinity\\Desktop\\Billing-Software\\BACKEND\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{712DE8FF-B2E7-4DC7-BBA3-CDF073DA6AC5}|BACKEND\\BACKEND.csproj|c:\\users\\jayantmohanmishra\\onedrive - cg infinity\\desktop\\billing-software\\backend\\backend\\backend.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{712DE8FF-B2E7-4DC7-BBA3-CDF073DA6AC5}|BACKEND\\BACKEND.csproj|solutionrelative:backend\\backend.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{712DE8FF-B2E7-4DC7-BBA3-CDF073DA6AC5}|BACKEND\\BACKEND.csproj|c:\\users\\jayantmohanmishra\\onedrive - cg infinity\\desktop\\billing-software\\backend\\backend\\properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{712DE8FF-B2E7-4DC7-BBA3-CDF073DA6AC5}|BACKEND\\BACKEND.csproj|solutionrelative:backend\\properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,11 +18,37 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "BACKEND",
+              "DocumentMoniker": "C:\\Users\\JayantMohanMishra\\OneDrive - CG Infinity\\Desktop\\Billing-Software\\BACKEND\\BACKEND\\BACKEND.csproj",
+              "RelativeDocumentMoniker": "BACKEND\\BACKEND.csproj",
+              "ToolTip": "C:\\Users\\JayantMohanMishra\\OneDrive - CG Infinity\\Desktop\\Billing-Software\\BACKEND\\BACKEND\\BACKEND.csproj",
+              "RelativeToolTip": "BACKEND\\BACKEND.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-07-23T09:47:30.468Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "launchSettings.json",
+              "DocumentMoniker": "C:\\Users\\JayantMohanMishra\\OneDrive - CG Infinity\\Desktop\\Billing-Software\\BACKEND\\BACKEND\\Properties\\launchSettings.json",
+              "RelativeDocumentMoniker": "BACKEND\\Properties\\launchSettings.json",
+              "ToolTip": "C:\\Users\\JayantMohanMishra\\OneDrive - CG Infinity\\Desktop\\Billing-Software\\BACKEND\\BACKEND\\Properties\\launchSettings.json",
+              "RelativeToolTip": "BACKEND\\Properties\\launchSettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-07-23T09:47:10.899Z",
+              "EditorCaption": ""
             }
           ]
         }
