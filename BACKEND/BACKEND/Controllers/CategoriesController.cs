@@ -61,47 +61,5 @@ namespace BACKEND.Controllers
             return Ok(category);
         }
 
-        // ==========================================
-        // CREATE CATEGORY
-        // POST: api/Categories
-        // ==========================================
-        [HttpPost]
-        public async Task<IActionResult> CreateCategory(CreateCategoryDto dto)
-        {
-            var category = new Category
-            {
-                Name = dto.Name,
-                Description = dto.Description,
-                CreatedAt = DateTime.Now
-            };
-
-            _context.Categories.Add(category);
-
-            await _context.SaveChangesAsync();
-
-            return Ok(category);
-        }
-
-       
-        // ==========================================
-        // DELETE CATEGORY
-        // DELETE: api/Categories/1
-        // ==========================================
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCategory(int id)
-        {
-            var category = await _context.Categories.FindAsync(id);
-
-            if (category == null)
-            {
-                return NotFound("Category not found.");
-            }
-
-            _context.Categories.Remove(category);
-
-            await _context.SaveChangesAsync();
-
-            return Ok("Category deleted successfully.");
-        }
-    }
+   }
 }
