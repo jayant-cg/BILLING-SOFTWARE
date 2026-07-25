@@ -1,112 +1,189 @@
 import React, { useState } from 'react';
 
-function InvoicePage({ buyer, cart }) {
-  const [pdfUrl, setPdfUrl] = useState(null);
+function InvoicePage({ buyer, cart, onStartNewBill, onGoBack }) {
   const [loading, setLoading] = useState(false);
+  const [invoiceData, setInvoiceData] = useState(null);
+  const [error, setError] = useState(null);
 
-  // Company details (static)
   const company = {
-    name: "TechStore Solutions",
-    address: "123 Business Park, Mumbai, Maharashtra 400001",
-    phone: "+91 98765 43210",
+    companyName: "TechStore Solutions",
+    billingAddress: "123 Business Park, Mumbai, Maharashtra 400001",
+    mobile: "+91 98765 43210",
     email: "info@techstore.com",
-    gst: "27AABCT1234H1Z0",
-    pan: "AABCT1234H"
+    gstin: "27AABCT1234H1Z0"
   };
 
   const generateInvoice = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch('/api/Invoices/generate', {
+      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const gstAmount = subtotal * 0.18;
+      const totalAmount = subtotal + gstAmount;
+
+      const invoicePayload = {
+        buyerId: buyer.id,
+        invoiceDate: new Date().toISOString().split('T')[0],
+        subtotal: subtotal,
+        gstAmount: gstAmount,
+        totalAmount: totalAmount,
+        status: "Created"
+      };
+
+      const res = await fetch('http://localhost:5081/api/Invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ buyerId: buyer.id, items: cart })
+        body: JSON.stringify(invoicePayload)
       });
-      const invoice = await res.json();
 
-      const pdfRes = await fetch(`/api/Invoices/${invoice.id}/pdf`);
-      const blob = await pdfRes.blob();
-      const url = URL.createObjectURL(blob);
-      setPdfUrl(url);
+      if (!res.ok) throw new Error('Failed to create invoice');
+
+      const invoice = await res.json();
+      
+      // Create invoice items
+      for (const item of cart) {
+        const itemAmount = item.price * item.qty;
+        const itemGstAmount = itemAmount * 0.18;
+
+        await fetch('http://localhost:5081/api/InvoiceItems', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            invoiceId: invoice.id,
+            productId: item.id,
+            qty: item.qty,
+            rate: item.price,
+            amount: itemAmount,
+            gstRate: 18,
+            gstAmount: itemGstAmount,
+            totalAmount: itemAmount + itemGstAmount
+          })
+        });
+      }
+
+      setInvoiceData(invoice);
     } catch (err) {
       console.error('Error generating invoice:', err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Calculate totals
+  const downloadPDF = async () => {
+    try {
+      const res = await fetch(`http://localhost:5081/api/Invoices/${invoiceData.id}/pdf`);
+      if (!res.ok) throw new Error('Failed to download PDF');
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${invoiceData.invoiceNo}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading PDF:', err);
+      setError(err.message);
+    }
+  };
+
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
   const gst = subtotal * 0.18;
   const grandTotal = subtotal + gst;
 
-  // Generate invoice number and date
-  const invoiceNumber = `INV-${Date.now()}`;
+  const invoiceNumber = invoiceData?.invoiceNo || `INV-${Date.now()}`;
   const invoiceDate = new Date().toLocaleDateString('en-IN');
   const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-[calc(100vh-100px)] bg-gray-50 p-6">
+      <div className="max-w-5xl mx-auto">
+        {error && (
+          <div className="mb-6 bg-red-50 border-2 border-red-500 rounded-lg p-4 text-red-700">
+            ⚠️ {error}
+          </div>
+        )}
+
         {/* Invoice Preview */}
-        <div className="bg-white rounded-xl shadow-2xl overflow-hidden mb-8">
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden mb-8 border-2 border-gray-200">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-white">
-            <div className="flex justify-between items-start">
+          <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 p-10 text-white">
+            <div className="flex justify-between items-start mb-6">
               <div>
-                <h1 className="text-4xl font-bold">{company.name}</h1>
-                <p className="text-blue-100 mt-2">{company.address}</p>
-                <p className="text-blue-100 mt-1">📞 {company.phone} | 📧 {company.email}</p>
+                <h1 className="text-5xl font-bold">{company.companyName}</h1>
+                <div className="flex flex-col gap-1 mt-3 text-blue-100">
+                  <p>📍 {company.billingAddress}</p>
+                  <p>📞 {company.mobile} | 📧 {company.email}</p>
+                </div>
               </div>
               <div className="text-right">
-                <div className="text-5xl font-bold opacity-20">INVOICE</div>
+                <div className="text-6xl font-black opacity-10">INVOICE</div>
               </div>
             </div>
           </div>
 
-          {/* Invoice Details */}
-          <div className="p-8">
-            <div className="grid grid-cols-2 gap-8 mb-8 pb-8 border-b-2 border-gray-200">
-              {/* Invoice Info */}
+          {/* Content */}
+          <div className="p-10">
+            {/* Invoice Meta */}
+            <div className="grid grid-cols-2 gap-10 mb-10 pb-10 border-b-2 border-gray-200">
               <div>
-                <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-4">Invoice Details</h3>
-                <div className="space-y-2 text-sm">
-                  <p><span className="font-semibold text-gray-700">Invoice No:</span> <span className="text-gray-600">{invoiceNumber}</span></p>
-                  <p><span className="font-semibold text-gray-700">Date:</span> <span className="text-gray-600">{invoiceDate}</span></p>
-                  <p><span className="font-semibold text-gray-700">Due Date:</span> <span className="text-gray-600">{dueDate}</span></p>
-                  <p><span className="font-semibold text-gray-700">GST No:</span> <span className="text-gray-600">{company.gst}</span></p>
+                <h3 className="text-xs font-black text-gray-600 uppercase tracking-widest mb-6">Invoice Details</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Invoice No:</span>
+                    <span className="font-semibold text-gray-900">{invoiceNumber}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Issue Date:</span>
+                    <span className="font-semibold text-gray-900">{invoiceDate}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Due Date:</span>
+                    <span className="font-semibold text-gray-900">{dueDate}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">GSTIN:</span>
+                    <span className="font-semibold text-gray-900">{company.gstin}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Bill To */}
               <div>
-                <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-4">Bill To</h3>
-                <div className="space-y-2 text-sm">
-                  <p className="font-semibold text-gray-800 text-lg">{buyer.name}</p>
-                  <p className="text-gray-600">{buyer.address}</p>
-                  <p><span className="font-semibold text-gray-700">Contact:</span> <span className="text-gray-600">{buyer.phone || 'N/A'}</span></p>
+                <h3 className="text-xs font-black text-gray-600 uppercase tracking-widest mb-6">Bill To</h3>
+                <div className="space-y-2">
+                  <p className="text-lg font-bold text-gray-900">{buyer.partyName}</p>
+                  <p className="text-sm text-gray-700">{buyer.billingAddress}</p>
+                  {buyer.mobile && (
+                    <p className="text-sm text-gray-600">📞 {buyer.mobile}</p>
+                  )}
+                  {buyer.gstin && (
+                    <p className="text-sm text-gray-600">GSTIN: {buyer.gstin}</p>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Items Table */}
-            <div className="mb-8">
+            <div className="mb-10">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-100 border-b-2 border-gray-300">
-                    <th className="px-4 py-3 text-left text-sm font-bold text-gray-700">Description</th>
-                    <th className="px-4 py-3 text-center text-sm font-bold text-gray-700">Qty</th>
-                    <th className="px-4 py-3 text-right text-sm font-bold text-gray-700">Unit Price</th>
-                    <th className="px-4 py-3 text-right text-sm font-bold text-gray-700">Amount</th>
+                  <tr className="bg-gray-100 border-y-2 border-gray-300">
+                    <th className="px-6 py-4 text-left text-xs font-black text-gray-700 uppercase tracking-wider">Product</th>
+                    <th className="px-6 py-4 text-center text-xs font-black text-gray-700 uppercase tracking-wider">Qty</th>
+                    <th className="px-6 py-4 text-right text-xs font-black text-gray-700 uppercase tracking-wider">Unit Price</th>
+                    <th className="px-6 py-4 text-right text-xs font-black text-gray-700 uppercase tracking-wider">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {cart.map((item, index) => (
-                    <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="px-4 py-4 text-gray-800 font-medium">{item.name}</td>
-                      <td className="px-4 py-4 text-center text-gray-600">{item.qty}</td>
-                      <td className="px-4 py-4 text-right text-gray-600">₹{item.price.toFixed(2)}</td>
-                      <td className="px-4 py-4 text-right text-gray-800 font-semibold">₹{(item.price * item.qty).toFixed(2)}</td>
+                  {cart.map((item) => (
+                    <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50 transition">
+                      <td className="px-6 py-4 text-gray-900 font-semibold">{item.modelName}</td>
+                      <td className="px-6 py-4 text-center text-gray-700">{item.qty}</td>
+                      <td className="px-6 py-4 text-right text-gray-700">₹{item.price.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-right text-gray-900 font-bold">₹{(item.price * item.qty).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -114,56 +191,74 @@ function InvoicePage({ buyer, cart }) {
             </div>
 
             {/* Totals */}
-            <div className="flex justify-end mb-8">
-              <div className="w-full md:w-80">
-                <div className="bg-gray-50 rounded-lg p-6 space-y-3 border border-gray-200">
+            <div className="flex justify-end mb-10">
+              <div className="w-full md:w-96">
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-8 space-y-4 border-2 border-gray-200">
                   <div className="flex justify-between text-gray-700">
-                    <span>Subtotal:</span>
-                    <span className="font-semibold">₹{subtotal.toFixed(2)}</span>
+                    <span className="font-semibold">Subtotal:</span>
+                    <span className="text-lg font-bold">₹{subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-700">
-                    <span>GST (18%):</span>
-                    <span className="font-semibold">₹{gst.toFixed(2)}</span>
+                    <span className="font-semibold">GST (18%):</span>
+                    <span className="text-lg font-bold text-orange-600">₹{gst.toFixed(2)}</span>
                   </div>
-                  <div className="border-t-2 border-gray-300 pt-3 flex justify-between text-lg font-bold text-blue-600">
-                    <span>Grand Total:</span>
-                    <span>₹{grandTotal.toFixed(2)}</span>
+                  <div className="border-t-2 border-gray-300 pt-4 flex justify-between">
+                    <span className="text-lg font-bold text-gray-900">Grand Total:</span>
+                    <span className="text-3xl font-black text-blue-600">₹{grandTotal.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="border-t-2 border-gray-200 pt-6 text-center text-sm text-gray-500">
-              <p>Thank you for your business!</p>
-              <p className="mt-2">This is a computer-generated invoice. No signature required.</p>
+            <div className="border-t-2 border-gray-200 pt-8 text-center text-sm text-gray-600">
+              <p className="font-semibold mb-1">Thank you for your business!</p>
+              <p>This is a computer-generated invoice. No signature required.</p>
             </div>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-4 justify-center">
+        <div className="flex gap-4 flex-wrap justify-center">
           <button
-            className={`px-8 py-3 rounded-lg text-white font-semibold transition-all duration-300 shadow-lg ${
-              loading 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover:shadow-xl'
-            }`}
-            onClick={generateInvoice}
-            disabled={loading}
+            onClick={onGoBack}
+            className="px-8 py-4 rounded-lg bg-white text-gray-700 font-bold border-2 border-gray-300 hover:border-blue-500 hover:text-blue-600 transition-all shadow-md hover:shadow-lg"
           >
-            {loading ? '⏳ Generating PDF...' : '📄 Generate PDF'}
+            ← Edit Cart
           </button>
 
-          {pdfUrl && (
-            <a
-              href={pdfUrl}
-              download={`invoice-${invoiceNumber}.pdf`}
-              className="px-8 py-3 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+          {!invoiceData ? (
+            <button
+              className={`px-8 py-4 rounded-lg text-white font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 ${
+                loading 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
+              }`}
+              onClick={generateInvoice}
+              disabled={loading}
             >
-              ⬇️ Download Invoice
-            </a>
+              <span>{loading ? '⏳' : '💾'}</span>
+              <span>{loading ? 'Creating Invoice...' : 'Create Invoice'}</span>
+            </button>
+          ) : (
+            <>
+              <button
+                className="px-8 py-4 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold hover:from-blue-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                onClick={downloadPDF}
+              >
+                <span>📄</span>
+                <span>Download PDF</span>
+              </button>
+            </>
           )}
+
+          <button
+            onClick={onStartNewBill}
+            className="px-8 py-4 rounded-lg bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold hover:from-orange-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+          >
+            <span>🔄</span>
+            <span>Start New Bill</span>
+          </button>
         </div>
       </div>
     </div>
